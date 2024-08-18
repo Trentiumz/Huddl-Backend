@@ -12,6 +12,7 @@ class AddActivitySerializer(serializers.Serializer):
   name = serializers.CharField(max_length=255, required=True)
   description = serializers.CharField(max_length=1000, required=False)
   link = serializers.CharField(max_length=255, required=False)
+  location = serializers.CharField(max_length=255, required=False)
 class AddActivity(ClubPermissionCheckMixin, APIView):
   def post(self, request, *args, **kwargs):
     update_request_user(request)
@@ -26,6 +27,8 @@ class AddActivity(ClubPermissionCheckMixin, APIView):
       activity.description = data.get('description')
     if data.get('link'):
       activity.link = data.get('link')
+    if data.get('location'):
+      activity.location = data.get('location')
     activity.save()
     return Response({"detail": "activity added"}, status=status.HTTP_201_CREATED)
 

@@ -1,7 +1,8 @@
+from django.core.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, serializers
-from .models import Club
+from .models import Club, FinalPlan, Activity
 from .club_tools import generate_join_id
 from .mixins import LoginAndValidateMixin, ClubPermissionCheckMixin
 from global_tools.user_find import update_request_user
@@ -180,3 +181,29 @@ class ChangeJoinStatus(ClubPermissionCheckMixin, APIView):
       club.save()
       return Response({"detail": "club joining disabled"},
                       status=status.HTTP_200_OK)
+
+class CreateFinalPlanSerializer(serializers.Serializer):
+  id = serializers.IntegerField(required=True)
+  activity_id = serializers.IntegerField(required=True)
+  start_time = serializers.DateTimeField(required=True)
+  end_time = serializers.DateTimeField(required=True)
+
+  def validate_activity_id(self, value):
+    if not Activity.objects.filter(id=value).exists():
+      raise ValidationError("activity does not exist")
+    return value
+  
+  def validate(self, data):
+    if data['end_time'] < data['start_time']:
+      raise serializers.ValidationError("End time cannot be before start time")
+    super().validate(data)
+class CreateFinalPlan(ClubPermissionCheckMixin, APIView):
+  def post(self, request, *args, **kwargs):
+    update_request_user(request)
+    serializer = CreateFinalPlanSerializer(data=request.data)
+    response = self.perform_checks(request, serializer, allow_owner=True, allow_admin=True)
+    if response:
+      return response
+
+    club = self.club
+    FinalPlan.objects.create(club=club)
