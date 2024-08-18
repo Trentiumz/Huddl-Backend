@@ -46,3 +46,21 @@ class ViewActivities(ClubPermissionCheckMixin, APIView):
     activities = club.activities_planned.all()
     return Response([activity.to_dict() for activity in activities], 
                     status=status.HTTP_200_OK)
+
+class ActivityDeleteSerializer(serializers.Serializer):
+  id = serializers.IntegerField(required=True)
+  activity_id = serializers.IntegerField(required=True)
+  def validate_activity_id(self, value):
+    pass
+class DeleteActivity(ClubPermissionCheckMixin, APIView):
+  def post(self, request, *args, **kwargs):
+    update_request_user(request)
+    serializer = ActivityDeleteSerializer(data=request.data)
+    response = self.perform_checks(request, serializer, allow_owner=True, allow_admin=True)
+    if response:
+      return response
+
+    club = self.club
+    activities = club.activities_planned.all()
+    return Response([activity.to_dict() for activity in activities], 
+                    status=status.HTTP_200_OK)

@@ -52,6 +52,7 @@ class Activity(models.Model):
   def to_dict(self):
     ret = {
       'club_id': self.club.id,
+      'id': self.id,
       'cost': self.cost,
       'time': self.time,
       'name': self.name,

@@ -189,15 +189,11 @@ class CreateFinalPlanSerializer(serializers.Serializer):
   start_time = serializers.DateTimeField(required=True)
   end_time = serializers.DateTimeField(required=True)
 
-  def validate_activity_id(self, value):
-    if not Club.activities_planned.filter(id=value).exists():
-      raise ValidationError("activity does not exist")
-    return value
-  
   def validate(self, data):
     if data['end_time'] < data['start_time']:
       raise serializers.ValidationError("End time cannot be before start time")
     super().validate(data)
+    return data
 class CreateFinalPlan(ClubPermissionCheckMixin, APIView):
   def post(self, request, *args, **kwargs):
     update_request_user(request)
@@ -207,6 +203,12 @@ class CreateFinalPlan(ClubPermissionCheckMixin, APIView):
       return response
 
     club = self.club
+    data = serializer.validated_data
+
+    if not club.activities_planned.filter(id=data.get('activity_id')).exists():
+      return Response({"detail": "activity not found"},
+                      status=status.HTTP_404_NOT_FOUND)
+    
     activity = Activity.objects.get(id=data.get('activity_id'))
     final_plan = FinalPlan.objects.create(club=club, activity=activity, start_time=data.get('start_time'), end_time=data.get('end_time'))
     return Response({"detail": "final plan created", "id": final_plan.id}, status=status.HTTP_201_CREATED)
@@ -215,10 +217,6 @@ class DeleteFinalPlanSerializer(serializers.Serializer):
   id = serializers.IntegerField(required=True)
   plan_id = serializers.IntegerField(required=True)
 
-  def validate_plan_id(self, value):
-    if not Club.final_plans.filter(id=value).exists():
-      raise ValidationError("plan does not exist")
-    return value
 class DeleteFinalPlan(ClubPermissionCheckMixin, APIView):
   def post(self, request, *args, **kwargs):
     update_request_user(request)
@@ -228,7 +226,12 @@ class DeleteFinalPlan(ClubPermissionCheckMixin, APIView):
       return response
 
     club = self.club
-    plan = Club.final_plans.get(id=data.get('activity_id'))
+    data = serializer.validated_data
+    if not club.final_plans.filter(id=data.get('plan_id')).exists():
+      return Response({"detail": "plan does not exist"},
+                      status=status.HTTP_404_NOT_FOUND)
+    
+    plan = Club.final_plans.get(id=data.get('plan_id'))
     plan.delete()
     return Response({"detail": "final plan deleted",}, 
                     status=status.HTTP_200_OK)
@@ -239,21 +242,6 @@ class EditFinalPlanSerializer(serializers.Serializer):
   activity_id = serializers.IntegerField(required=False)
   start_time = serializers.DateTimeField(required=False)
   end_time = serializers.DateTimeField(required=False)
-
-  def validate_plan_id(self, value):
-    if not Club.final_plans.filter(id=value).exists():
-      raise ValidationError("Plan does not exist")
-    return value
-  
-  def validate_activity_id(self, value):
-    if value is not None and not Club.activities_planned.filter(id=value).exists():
-      raise ValidationError("activity does not exist")
-    return value
-
-  def validate(self, data):
-    if data['end_time'] < data['start_time']:
-      raise serializers.ValidationError("End time cannot be before start time")
-    super().validate(data)
 class EditFinalPlan(ClubPermissionCheckMixin, APIView):
   def post(self, request, *args, **kwargs):
     update_request_user(request)
@@ -263,12 +251,26 @@ class EditFinalPlan(ClubPermissionCheckMixin, APIView):
       return response
 
     club = self.club
+    data = serializer.validated_data
+    if not club.final_plans.filter(id=data.get('plan_id')).exists():
+      return Response({"detail": "plan does not exist"},
+        status=status.HTTP_404_NOT_FOUND)
+    
     plan = club.final_plans.get(id=data.get('plan_id'))
     if data.get('activity_id'):
+      if not club.activities_planned.filter(id=data.get('activity_id')).exists():
+        return Response({"detail": "activity does not exist"},
+          status=status.HTTP_404_NOT_FOUND)
       plan.activity = Club.activities_planned.get(id=data.get('activity_id'))
     if data.get('start_time'):
+      if data.get('end_time') and data.get('end_time') < data.get('start_time') or data.get('end_time') is None and plan.end_time is not None and plan.end_time < data.get('start_time'):
+        return Response({"detail": "end time cannot be before start time"}, 
+                        status=status.HTTP_400_BAD_REQUEST)
       plan.start_time = data.get('start_time')
     if data.get('end_time'):
+      if data.get('start_time') and data.get('start_time') > data.get('end_time') or data.get('start_time') is None and plan.start_time is not None and plan.start_time > data.get('end_time'):
+        return Response({"detail": "start time cannot be after end time"},  
+                        status=status.HTTP_400_BAD_REQUEST)
       plan.end_time = data.get('end_time')
     plan.save()
     return Response({"detail": "plan updated"}, status=status.HTTP_201_CREATED)
