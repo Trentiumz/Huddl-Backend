@@ -7,6 +7,7 @@ class Club(models.Model):
   owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clubs_owned', 
                             null=False, blank=False)
   name = models.CharField(max_length=255)
+  description = models.TextField(max_length=1000, null=True, blank=True)
   admin = models.ManyToManyField(User, related_name='clubs_managing')
   members = models.ManyToManyField(User, related_name='clubs_in')
 
@@ -18,6 +19,7 @@ class Club(models.Model):
     ret = {
       'id': self.id,
       'name': self.name,
+      'description': self.description
     }
     if include_owner:
       ret['owner'] = self.owner.to_dict()
@@ -43,7 +45,7 @@ class Activity(models.Model):
   cost = models.DecimalField(blank=False, decimal_places=2, max_digits=10)
   time = models.DurationField(blank=False)
   name = models.CharField(max_length=255, blank=False)
-  description = models.TextField(blank=True, default='')
+  description = models.TextField(blank=True, max_length=1000, default='')
   link = models.CharField(max_length=255, blank=True, null=True)
 
   def to_dict(self):

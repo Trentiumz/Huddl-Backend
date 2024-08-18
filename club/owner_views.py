@@ -8,6 +8,7 @@ from global_tools.user_find import update_request_user
 
 class ClubCreateSerializer(serializers.Serializer):
   name = serializers.CharField(max_length=255, required=True)
+  description = serializers.CharField(max_length=1000, required=False)
   join_enabled = serializers.BooleanField(required=False)
 class CreateClub(LoginAndValidateMixin, APIView):
   def post(self, request, *args, **kwargs):
@@ -22,8 +23,10 @@ class CreateClub(LoginAndValidateMixin, APIView):
     join_id = ""
     if join_enabled:
       join_id = generate_join_id()
-    club = Club.objects.create(name=name, join_enabled=join_enabled, join_id=join_id,
-                               owner=request.user)
+    club = Club.objects.create(name=name, join_enabled=join_enabled,
+                               join_id=join_id,owner=request.user)
+    if validated_data.get('description'):
+      club.description = validated_data.get('description')
     club.admin.add(request.user)
     club.members.add(request.user)
     club.save()

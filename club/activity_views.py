@@ -10,7 +10,7 @@ class AddActivitySerializer(serializers.Serializer):
   cost = serializers.DecimalField(required=False, decimal_places=2, max_digits=10)
   time = serializers.DurationField(required=True)
   name = serializers.CharField(max_length=255, required=True)
-  description = serializers.CharField(max_length=32768, required=False)
+  description = serializers.CharField(max_length=1000, required=False)
   link = serializers.CharField(max_length=255, required=False)
 class AddActivity(ClubPermissionCheckMixin, APIView):
   def post(self, request, *args, **kwargs):
