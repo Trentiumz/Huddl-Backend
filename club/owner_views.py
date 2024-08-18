@@ -7,6 +7,9 @@ from .club_tools import generate_join_id
 from .mixins import LoginAndValidateMixin, ClubPermissionCheckMixin
 from global_tools.user_find import update_request_user
 
+class ClubIDSerializer(serializers.Serializer):
+  id = serializers.IntegerField(required=True)
+
 class ClubCreateSerializer(serializers.Serializer):
   name = serializers.CharField(max_length=255, required=True)
   description = serializers.CharField(max_length=1000, required=False)
@@ -116,12 +119,10 @@ class RemoveMember(ClubPermissionCheckMixin, APIView):
     club.save()
     return Response({"detail": "user removed"}, status=status.HTTP_200_OK)
 
-class DeleteClubSerializer(serializers.Serializer):
-  id = serializers.IntegerField(required=True)
 class DeleteClub(ClubPermissionCheckMixin, APIView):
   def post(self, request, *args, **kwargs):
     update_request_user(request)
-    serializer = DeleteClubSerializer(data=request.data)
+    serializer = ClubIDSerializer(data=request.data)
     response = self.perform_checks(request, serializer, allow_owner=True)
     if response:
       return response
@@ -206,4 +207,6 @@ class CreateFinalPlan(ClubPermissionCheckMixin, APIView):
       return response
 
     club = self.club
-    FinalPlan.objects.create(club=club)
+    activity = Activity.objects.get(id=data.get('activity_id'))
+    final_plan = FinalPlan.objects.create(club=club, activity=activity, start_time=data.get('start_time'), end_time=data.get('end_time'))
+    return Response({"detail": "final plan created", "id": final_plan.id}, status=status.HTTP_201_CREATED)

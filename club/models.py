@@ -90,6 +90,7 @@ class FinalPlan(models.Model):
 
   def to_dict(self, include_full_club_data=False):
     ret = {
+      'id': self.id,
       'cost': self.activity.cost,
       'start_time': self.start_time,
       'end_time': self.end_time,

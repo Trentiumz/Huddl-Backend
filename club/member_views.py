@@ -140,3 +140,17 @@ class EditClubProfile(ClubPermissionCheckMixin, APIView):
       profile.maximum_time = data.get('maximum_time')
     profile.save()
     return Response({"details": "saved profile"}, status=status.HTTP_200_OK)
+
+class GetPlanSerializer(serializers.Serializers):
+  id = serializers.IntegerField(required=True)
+class GetPlans(ClubPermissionCheckMixin, APIView):
+  def post(self, request, *args, **kwargs):
+    update_request_user(request)
+    serializer = GetPlanSerializer(data=request.data)
+    response = self.perform_checks(request, serializer, allow_owner=True, allow_admin=True, allow_member=True)
+    if response:
+      return response
+
+    club = self.club
+    plans = club.final_plans.all()
+    return Response([plan.to_dict() for plan in plans], status=status.HTTP_200_OK)
