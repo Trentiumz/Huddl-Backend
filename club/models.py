@@ -73,11 +73,29 @@ class ClubProfile(models.Model):
   class Meta:
     constraints = [models.UniqueConstraint(fields=('club', 'user'), name='unique_per_user')]
 
+class FinalPlan(models.Model):
+  club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='final_plan', unique=True)
+  activity = models.ForeignKey(Activity, null=True, on_delete=models.SET_NULL, related_name='plans_in')
+  start_time = models.DateTimeField(null=True, blank=True)
+  end_time = models.DateTimeField(null=True, blank=True)
+
+  def clean(self):
+    super().clean()
+    if self.club.voting_plan is not None:
+      raise ValidationError('Cannot have both a voting plan and final plan')
+    if self.end_time is not None and self.start_time is not None:
+      raise ValidationError('End time cannot be before start time')
+
 class VotingPlan(models.Model):
-  club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='voting_plan')
+  club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='voting_plan', unique=True)
   cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
   time = models.DurationField(null=True, blank=True)
   deadline = models.DateTimeField(null=True, blank=True)
+
+  def clean(self):
+    super().clean()
+    if self.club.final_plan is not None:
+      raise ValidationError('Cannot have both a voting plan and final plan')
 
 class Vote(models.Model):
   plan = models.ForeignKey(VotingPlan, on_delete=models.CASCADE, related_name='votes')
@@ -89,15 +107,4 @@ class Vote(models.Model):
   class Meta:
     constraints = [
       UniqueConstraint(fields=('plan', 'user'), name='one-vote-per-user')
-    ]
-
-class FinalPlan(models.Model):
-  club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='final_plan')
-  activity = models.ForeignKey(Activity, null=True, on_delete=models.SET_NULL, related_name='plans_in')
-  start_time = models.DateTimeField(null=True, blank=True)
-  end_time = models.DateTimeField(null=True, blank=True)
-  
-  class Meta:
-    constraints = [
-      UniqueConstraint(fields=['club'], name='one-plan-per-club')
     ]
