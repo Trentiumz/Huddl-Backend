@@ -190,7 +190,7 @@ class CreateFinalPlanSerializer(serializers.Serializer):
   end_time = serializers.DateTimeField(required=True)
 
   def validate_activity_id(self, value):
-    if not Activity.objects.filter(id=value).exists():
+    if not Club.activities_planned.filter(id=value).exists():
       raise ValidationError("activity does not exist")
     return value
   
@@ -210,3 +210,65 @@ class CreateFinalPlan(ClubPermissionCheckMixin, APIView):
     activity = Activity.objects.get(id=data.get('activity_id'))
     final_plan = FinalPlan.objects.create(club=club, activity=activity, start_time=data.get('start_time'), end_time=data.get('end_time'))
     return Response({"detail": "final plan created", "id": final_plan.id}, status=status.HTTP_201_CREATED)
+
+class DeleteFinalPlanSerializer(serializers.Serializer):
+  id = serializers.IntegerField(required=True)
+  plan_id = serializers.IntegerField(required=True)
+
+  def validate_plan_id(self, value):
+    if not Club.final_plans.filter(id=value).exists():
+      raise ValidationError("plan does not exist")
+    return value
+class DeleteFinalPlan(ClubPermissionCheckMixin, APIView):
+  def post(self, request, *args, **kwargs):
+    update_request_user(request)
+    serializer = DeleteFinalPlanSerializer(data=request.data)
+    response = self.perform_checks(request, serializer, allow_owner=True, allow_admin=True)
+    if response:
+      return response
+
+    club = self.club
+    plan = Club.final_plans.get(id=data.get('activity_id'))
+    plan.delete()
+    return Response({"detail": "final plan deleted",}, 
+                    status=status.HTTP_200_OK)
+
+class EditFinalPlanSerializer(serializers.Serializer):
+  id = serializers.IntegerField(required=True)
+  plan_id = serializers.IntegerField(required=True)
+  activity_id = serializers.IntegerField(required=False)
+  start_time = serializers.DateTimeField(required=False)
+  end_time = serializers.DateTimeField(required=False)
+
+  def validate_plan_id(self, value):
+    if not Club.final_plans.filter(id=value).exists():
+      raise ValidationError("Plan does not exist")
+    return value
+  
+  def validate_activity_id(self, value):
+    if value is not None and not Club.activities_planned.filter(id=value).exists():
+      raise ValidationError("activity does not exist")
+    return value
+
+  def validate(self, data):
+    if data['end_time'] < data['start_time']:
+      raise serializers.ValidationError("End time cannot be before start time")
+    super().validate(data)
+class EditFinalPlan(ClubPermissionCheckMixin, APIView):
+  def post(self, request, *args, **kwargs):
+    update_request_user(request)
+    serializer = EditFinalPlanSerializer(data=request.data)
+    response = self.perform_checks(request, serializer, allow_owner=True, allow_admin=True)
+    if response:
+      return response
+
+    club = self.club
+    plan = club.final_plans.get(id=data.get('plan_id'))
+    if data.get('activity_id'):
+      plan.activity = Club.activities_planned.get(id=data.get('activity_id'))
+    if data.get('start_time'):
+      plan.start_time = data.get('start_time')
+    if data.get('end_time'):
+      plan.end_time = data.get('end_time')
+    plan.save()
+    return Response({"detail": "plan updated"}, status=status.HTTP_201_CREATED)

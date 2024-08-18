@@ -141,7 +141,7 @@ class EditClubProfile(ClubPermissionCheckMixin, APIView):
     profile.save()
     return Response({"details": "saved profile"}, status=status.HTTP_200_OK)
 
-class GetPlanSerializer(serializers.Serializers):
+class GetPlanSerializer(serializers.Serializer):
   id = serializers.IntegerField(required=True)
 class GetPlans(ClubPermissionCheckMixin, APIView):
   def post(self, request, *args, **kwargs):
