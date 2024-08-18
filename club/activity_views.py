@@ -50,8 +50,6 @@ class ViewActivities(ClubPermissionCheckMixin, APIView):
 class ActivityDeleteSerializer(serializers.Serializer):
   id = serializers.IntegerField(required=True)
   activity_id = serializers.IntegerField(required=True)
-  def validate_activity_id(self, value):
-    pass
 class DeleteActivity(ClubPermissionCheckMixin, APIView):
   def post(self, request, *args, **kwargs):
     update_request_user(request)
@@ -61,6 +59,9 @@ class DeleteActivity(ClubPermissionCheckMixin, APIView):
       return response
 
     club = self.club
-    activities = club.activities_planned.all()
-    return Response([activity.to_dict() for activity in activities], 
-                    status=status.HTTP_200_OK)
+    data = serializer.validated_data
+    activity = club.activities_planned.filter(id=data.get('activity_id')).first()
+    if not activity:
+      return Response({"detail": "activity not found"},
+                      status=status.HTTP_404_NOT_FOUND)
+    return Response({"detail": "activity deleted"}, status=status.HTTP_200_OK)

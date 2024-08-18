@@ -231,7 +231,7 @@ class DeleteFinalPlan(ClubPermissionCheckMixin, APIView):
       return Response({"detail": "plan does not exist"},
                       status=status.HTTP_404_NOT_FOUND)
     
-    plan = Club.final_plans.get(id=data.get('plan_id'))
+    plan = club.final_plans.filter(id=data.get('plan_id')).first()
     plan.delete()
     return Response({"detail": "final plan deleted",}, 
                     status=status.HTTP_200_OK)

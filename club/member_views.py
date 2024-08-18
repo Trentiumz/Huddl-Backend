@@ -55,8 +55,9 @@ class JoinClub(LoginAndValidateMixin, APIView):
       return Response({"detail": "invalid join id"}, status=status.HTTP_404_NOT_FOUND)
     club = valid_clubs.first()
     club.members.add(request.user)
-
     club.save()
+    
+    return Response({"detail": "user added to group"}, status=status.HTTP_200_OK)
 
 class ClubLeaveSerializer(serializers.Serializer):
   id = serializers.IntegerField(required=True)

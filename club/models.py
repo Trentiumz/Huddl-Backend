@@ -38,6 +38,8 @@ class Club(models.Model):
     return self.is_owner(user) or self.admin.filter(id=user.id).exists()
   def is_member(self, user):
     return self.is_admin(user) or self.members.filter(id=user.id).exists()
+  def __str__(self):
+    return str(self.name)
 
 class Activity(models.Model):
   club = models.ForeignKey(Club, on_delete=models.CASCADE, 
@@ -58,10 +60,8 @@ class Activity(models.Model):
       'name': self.name,
       'description': self.description
     }
-    if self.link:
-      ret['link'] = self.link
-    if self.location:
-      ret['location'] = self.location
+    ret['link'] = self.link if self.link else None
+    ret['location'] = self.location if self.location else None
     return ret
 
 class ClubProfile(models.Model):
@@ -92,6 +92,7 @@ class FinalPlan(models.Model):
   def to_dict(self, include_full_club_data=False):
     ret = {
       'id': self.id,
+      'activity': self.activity.to_dict(),
       'cost': self.activity.cost,
       'start_time': self.start_time,
       'end_time': self.end_time,
