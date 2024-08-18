@@ -1,7 +1,7 @@
 from django.urls import path
 from .member_views import GetClubsIn, GetClub, JoinClub, LeaveClub, MyClubStatus, ViewClubProfile, EditClubProfile, GetPlans
 from .owner_views import CreateClub, GetOwnedClubs, AdminInfo, PromoteMember, RemoveMember, DeleteClub, TransferClub, ChangeJoinStatus, CreateFinalPlan, DeleteFinalPlan, EditFinalPlan
-from .activity_views import AddActivity, ViewActivities
+from .activity_views import AddActivity, ViewActivities, DeleteActivity
 
 urlpatterns = [
   path('create', CreateClub.as_view(), name='create_club'),
@@ -23,6 +23,7 @@ urlpatterns = [
 
   path('add-activity', AddActivity.as_view(), name='add_activity'),
   path('view-activities', ViewActivities.as_view(), name='view_activities'),
+  path('delete-activity', DeleteActivity.as_view(), name='delete_activity'),
 
   path('view-profile', ViewClubProfile.as_view(), name='view_club_profile'),
   path('edit-profile', EditClubProfile.as_view(), name='edit_club_profile'),
