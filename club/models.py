@@ -74,7 +74,8 @@ class ClubProfile(models.Model):
     constraints = [models.UniqueConstraint(fields=('club', 'user'), name='unique_per_user')]
 
 class FinalPlan(models.Model):
-  club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='final_plan', unique=True)
+  club = models.OneToOneField(Club, on_delete=models.CASCADE,
+                              related_name='final_plan')
   activity = models.ForeignKey(Activity, null=True, on_delete=models.SET_NULL, related_name='plans_in')
   start_time = models.DateTimeField(null=True, blank=True)
   end_time = models.DateTimeField(null=True, blank=True)
@@ -86,8 +87,23 @@ class FinalPlan(models.Model):
     if self.end_time is not None and self.start_time is not None:
       raise ValidationError('End time cannot be before start time')
 
+  def to_dict(self, include_full_club_data=False):
+    ret = {
+      'cost': self.activity.cost,
+      'start_time': self.start_time,
+      'end_time': self.end_time,
+    }
+    if include_full_club_data:
+      ret['club'] = self.club
+    else:
+      ret['club'] = {
+        'id': self.club.id
+      }
+    return ret
+
 class VotingPlan(models.Model):
-  club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='voting_plan', unique=True)
+  club = models.OneToOneField(Club, on_delete=models.CASCADE,
+                              related_name='voting_plan')
   cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
   time = models.DurationField(null=True, blank=True)
   deadline = models.DateTimeField(null=True, blank=True)
@@ -96,6 +112,20 @@ class VotingPlan(models.Model):
     super().clean()
     if self.club.final_plan is not None:
       raise ValidationError('Cannot have both a voting plan and final plan')
+
+  def to_dict(self, include_full_club_data=False):
+    ret = {
+      'cost': self.cost,
+      'time': self.time,
+      'deadline': self.deadline
+    }
+    if include_full_club_data:
+      ret['club'] = self.club
+    else:
+      ret['club'] = {
+        'id': self.club.id
+      }
+    return ret
 
 class Vote(models.Model):
   plan = models.ForeignKey(VotingPlan, on_delete=models.CASCADE, related_name='votes')
@@ -108,3 +138,13 @@ class Vote(models.Model):
     constraints = [
       UniqueConstraint(fields=('plan', 'user'), name='one-vote-per-user')
     ]
+
+  def to_dict(self, full_plan=False, full_user=False):
+    ret = {
+      'cost_min': self.cost_min,
+      'cost_max': self.cost_max,
+      'time': self.time
+    }
+    ret['plan'] = self.plan.to_dict() if full_plan else {'id': self.plan.id}
+    ret['user'] = self.user.to_dict() if full_user else {'id': self.user.id}
+    return ret
