@@ -72,18 +72,26 @@ class ClubProfile(models.Model):
     constraints = [models.UniqueConstraint(fields=('club', 'user'), name='unique_per_user')]
 
 class VotingPlan(models.Model):
-  club = models.ForeignKey(Club, on_delete=models.CASCADE)
+  club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='voting_plan')
   cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
   time = models.DurationField(null=True, blank=True)
   deadline = models.DateTimeField(null=True, blank=True)
 
 class Vote(models.Model):
-  plan = models.ForeignKey(VotingPlan, on_delete=models.CASCADE)
-  pass
+  plan = models.ForeignKey(VotingPlan, on_delete=models.CASCADE, related_name='votes')
+  user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='votes_made')
+  cost_min = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+  cost_max = models.DecimalField(max_digits=10, decimal_places=2, null=True)
+  time = models.DurationField(null=True, blank=True)
+  
+  class Meta:
+    constraints = [
+      UniqueConstraint(fields=('plan', 'user'), name='one-vote-per-user')
+    ]
 
 class FinalPlan(models.Model):
-  club = models.ForeignKey(Club, on_delete=models.CASCADE)
-  activity = models.ForeignKey(Activity, null=True, on_delete=models.SET_NULL)
+  club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='final_plan')
+  activity = models.ForeignKey(Activity, null=True, on_delete=models.SET_NULL, related_name='plans_in')
   start_time = models.DateTimeField(null=True, blank=True)
   end_time = models.DateTimeField(null=True, blank=True)
   
