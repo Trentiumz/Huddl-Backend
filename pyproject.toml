@@ -1,6 +1,6 @@
 [tool.poetry]
-authors = ["Your Name <you@example.com>"]
-description = ""
+authors = ["Daniel Ye <danielyeqt@gmail.com>"]
+description = "A backend project for Huddl"
 name = "django-template"
 version = "0.1.0"
 [tool.poetry.dependencies]
